@@ -1,0 +1,120 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ProjectCard from "../components/ProjectCard.astro";
+
+const OG_IMAGE_PROPERTY_PATTERN = /^og:image(?::secure_url)?$/i;
+
+function extractOgImage(html: string): string | undefined {
+  const metaTags = html.match(/<meta\b[^>]*>/gi) ?? [];
+  for (const tag of metaTags) {
+    const attrs = new Map<string, string>();
+    const attrPattern = /([a-zA-Z:-]+)\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>]+))/g;
+    let match: RegExpExecArray | null = attrPattern.exec(tag);
+    while (match) {
+      const name = match[1].toLowerCase();
+      const value = match[3] ?? match[4] ?? match[5] ?? "";
+      attrs.set(name, value);
+      match = attrPattern.exec(tag);
+    }
+
+    const property = attrs.get("property") ?? attrs.get("name");
+    const content = attrs.get("content");
+    if (property && content && OG_IMAGE_PROPERTY_PATTERN.test(property)) {
+      return content.replaceAll("&amp;", "&");
+    }
+  }
+  return undefined;
+}
+
+async function resolveOgImage(pageUrl: string): Promise<string | undefined> {
+  try {
+    const response = await fetch(pageUrl, {
+      redirect: "follow",
+      headers: {
+        "user-agent": "Mozilla/5.0 (compatible; ktak.dev portfolio builder)",
+        accept: "text/html,application/xhtml+xml",
+      },
+    });
+    if (!response.ok) {
+      console.warn(`[og:image] failed to fetch ${pageUrl}: ${response.status}`);
+      return undefined;
+    }
+    const html = await response.text();
+    const ogImage = extractOgImage(html);
+    if (!ogImage) {
+      return undefined;
+    }
+    return new URL(ogImage, response.url).toString();
+  } catch (error) {
+    console.warn(`[og:image] failed to resolve for ${pageUrl}`, error);
+    return undefined;
+  }
+}
+
+const projectEntries = (await getCollection("projects")).sort((a, b) => a.data.order - b.data.order);
+const projects = await Promise.all(
+  projectEntries.map(async (project) => ({
+    ...project,
+    data: {
+      ...project.data,
+      ogp: project.data.ogp ?? (await resolveOgImage(project.data.url)),
+    },
+  })),
+);
+---
+
+<BaseLayout title="ktak.dev">
+  <section id="projects" aria-labelledby="projects-heading">
+    <h2 id="projects-heading" class="mb-6 text-2xl font-semibold">Projects</h2>
+    <ul class="grid grid-cols-1 gap-6 md:grid-cols-2" role="list">
+      {
+        projects.map((project) => (
+          <li>
+            <ProjectCard {...project.data} />
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <section id="links" aria-labelledby="links-heading" class="mt-12">
+    <h2 id="links-heading" class="mb-4 text-2xl font-semibold">Links</h2>
+    <div class="flex gap-4">
+      <a
+        href="https://github.com/babcs2035"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="GitHub を開く"
+        class="rounded-md border border-slate-300 bg-white p-2 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          class="h-6 w-6"
+          aria-hidden="true"
+        >
+          <path d="M12 .297a12 12 0 0 0-3.794 23.39c.6.111.82-.258.82-.577v-2.235c-3.338.724-4.043-1.61-4.043-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.73.083-.73 1.204.085 1.838 1.235 1.838 1.235 1.07 1.833 2.807 1.303 3.492.997.108-.776.418-1.304.762-1.604-2.665-.303-5.466-1.332-5.466-5.93 0-1.31.469-2.382 1.235-3.222-.124-.303-.535-1.523.117-3.176 0 0 1.008-.322 3.301 1.23a11.48 11.48 0 0 1 6.01 0c2.292-1.552 3.297-1.23 3.297-1.23.655 1.653.245 2.873.12 3.176.77.84 1.232 1.912 1.232 3.222 0 4.61-2.807 5.624-5.48 5.921.43.372.823 1.103.823 2.222v3.293c0 .321.216.694.825.576A12.003 12.003 0 0 0 12 .297Z" />
+        </svg>
+      </a>
+      <a
+        href="https://twitter.com/babcs2035"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="X (Twitter) を開く"
+        class="rounded-md border border-slate-300 bg-white p-2 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          class="h-6 w-6"
+          aria-hidden="true"
+        >
+          <path d="M18.244 2H21.5l-7.11 8.13L22.75 22h-6.55l-5.13-6.73L5.2 22H1.94l7.6-8.69L1.25 2h6.71l4.64 6.09L18.244 2Zm-1.15 18h1.8L6.98 3.9H5.05L17.094 20Z" />
+        </svg>
+      </a>
+    </div>
+  </section>
+</BaseLayout>

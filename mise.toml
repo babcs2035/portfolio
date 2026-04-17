@@ -1,0 +1,29 @@
+[tools]
+node = "latest"
+pnpm = "latest"
+
+[env]
+_.file = ".env"
+
+[tasks.install]
+description = "Install dependencies"
+run = "pnpm install --frozen-lockfile"
+
+[tasks.dev]
+description = "Start Astro dev server"
+depends = ["install"]
+run = "pnpm dev"
+
+[tasks.build]
+description = "Build static site"
+depends = ["install"]
+run = "pnpm build"
+
+[tasks.preview]
+description = "Preview built site"
+depends = ["build"]
+run = "pnpm preview"
+
+[tasks.check]
+description = "Run project checks"
+run = "pnpm astro check && pnpm build"

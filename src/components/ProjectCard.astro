@@ -1,0 +1,74 @@
+---
+interface Props {
+  title: string;
+  description: string;
+  url: string;
+  github?: string;
+  ogp?: string;
+  requiresBasicAuth: boolean;
+  order: number;
+}
+
+const { title, description, url, github, ogp, requiresBasicAuth, order } = Astro.props;
+const fallbackPalette = ["#1D4ED8", "#0F766E", "#7C3AED", "#B45309", "#BE123C", "#334155", "#166534"];
+const resolvedFallbackColor = fallbackPalette[(order - 1) % fallbackPalette.length];
+---
+
+<article class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+  <a
+    href={url}
+    target="_blank"
+    rel="noopener noreferrer"
+    class="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500"
+    aria-label={`${title} を開く`}
+  >
+    {
+      ogp ? (
+        <img src={ogp} alt={title} class="h-48 w-full object-cover" loading="lazy" />
+      ) : (
+        <div class="h-48 w-full" style={`background-color: ${resolvedFallbackColor};`} aria-hidden="true"></div>
+      )
+    }
+  </a>
+  <div class="space-y-2 p-5">
+    <div class="flex items-start justify-between gap-4">
+      <h3 class="text-xl font-semibold">
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center rounded-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500"
+        >
+          {title}
+        </a>
+      </h3>
+      {
+        github && (
+          <a
+            href={github}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${title} の GitHub リポジトリを開く`}
+            class="rounded-md border border-slate-300 p-2 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              class="h-5 w-5"
+              aria-hidden="true"
+            >
+              <path d="M12 .297a12 12 0 0 0-3.794 23.39c.6.111.82-.258.82-.577v-2.235c-3.338.724-4.043-1.61-4.043-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.73.083-.73 1.204.085 1.838 1.235 1.838 1.235 1.07 1.833 2.807 1.303 3.492.997.108-.776.418-1.304.762-1.604-2.665-.303-5.466-1.332-5.466-5.93 0-1.31.469-2.382 1.235-3.222-.124-.303-.535-1.523.117-3.176 0 0 1.008-.322 3.301 1.23a11.48 11.48 0 0 1 6.01 0c2.292-1.552 3.297-1.23 3.297-1.23.655 1.653.245 2.873.12 3.176.77.84 1.232 1.912 1.232 3.222 0 4.61-2.807 5.624-5.48 5.921.43.372.823 1.103.823 2.222v3.293c0 .321.216.694.825.576A12.003 12.003 0 0 0 12 .297Z" />
+            </svg>
+          </a>
+        )
+      }
+    </div>
+    <div>
+      <p class="text-slate-700">
+        {description}
+        {requiresBasicAuth && <span class="ml-2 text-sm text-slate-500">要 Basic 認証</span>}
+      </p>
+    </div>
+  </div>
+</article>
