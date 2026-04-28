@@ -4,6 +4,25 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import ProjectCard from "../components/ProjectCard.astro";
 
 const OG_IMAGE_PROPERTY_PATTERN = /^og:image(?::secure_url)?$/i;
+const localThumbnailModules = import.meta.glob<string>("/src/images/*", {
+  eager: true,
+  import: "default",
+  query: "?url",
+});
+const localThumbnailsByFilename = new Map(
+  Object.entries(localThumbnailModules).map(([path, resolvedUrl]) => [path.split("/").at(-1) ?? path, resolvedUrl]),
+);
+
+function resolveLocalThumbnail(filename: string | undefined, projectTitle: string): string | undefined {
+  if (!filename) {
+    return undefined;
+  }
+  const resolvedThumbnail = localThumbnailsByFilename.get(filename);
+  if (!resolvedThumbnail) {
+    throw new Error(`[thumbnail] "${projectTitle}" references missing file "${filename}" in src/images/`);
+  }
+  return resolvedThumbnail;
+}
 
 function extractOgImage(html: string): string | undefined {
   const metaTags = html.match(/<meta\b[^>]*>/gi) ?? [];
@@ -54,13 +73,17 @@ async function resolveOgImage(pageUrl: string): Promise<string | undefined> {
 
 const projectEntries = (await getCollection("projects")).sort((a, b) => a.data.order - b.data.order);
 const projects = await Promise.all(
-  projectEntries.map(async (project) => ({
-    ...project,
-    data: {
-      ...project.data,
-      ogp: project.data.ogp ?? (await resolveOgImage(project.data.url)),
-    },
-  })),
+  projectEntries.map(async (project) => {
+    const thumbnail = resolveLocalThumbnail(project.data.thumbnail, project.data.title);
+    return {
+      ...project,
+      data: {
+        ...project.data,
+        thumbnail,
+        ogp: thumbnail ? undefined : (project.data.ogp ?? (await resolveOgImage(project.data.url))),
+      },
+    };
+  }),
 );
 ---
 

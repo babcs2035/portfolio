@@ -5,13 +5,15 @@ interface Props {
   url: string;
   github?: string;
   ogp?: string;
+  thumbnail?: string;
   requiresBasicAuth: boolean;
   order: number;
 }
 
-const { title, description, url, github, ogp, requiresBasicAuth, order } = Astro.props;
+const { title, description, url, github, ogp, thumbnail, requiresBasicAuth, order } = Astro.props;
 const fallbackPalette = ["#1D4ED8", "#0F766E", "#7C3AED", "#B45309", "#BE123C", "#334155", "#166534"];
 const resolvedFallbackColor = fallbackPalette[(order - 1) % fallbackPalette.length];
+const coverImage = thumbnail ?? ogp;
 ---
 
 <article class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -23,8 +25,8 @@ const resolvedFallbackColor = fallbackPalette[(order - 1) % fallbackPalette.leng
     aria-label={`${title} を開く`}
   >
     {
-      ogp ? (
-        <img src={ogp} alt={title} class="h-48 w-full object-cover" loading="lazy" />
+      coverImage ? (
+        <img src={coverImage} alt={title} class="h-48 w-full object-cover" loading="lazy" />
       ) : (
         <div class="h-48 w-full" style={`background-color: ${resolvedFallbackColor};`} aria-hidden="true"></div>
       )

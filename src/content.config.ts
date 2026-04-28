@@ -14,6 +14,10 @@ const projects = defineCollection({
         .optional()
         .transform((value) => value || undefined),
       ogp: z.url().optional(),
+      thumbnail: z
+        .string()
+        .regex(/^[^/\\]+$/, "thumbnail must be a file name in src/images/")
+        .optional(),
       requiresBasicAuth: z.boolean().default(false),
       order: z.number().int().nonnegative(),
     }),
